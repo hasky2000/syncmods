@@ -80,7 +80,7 @@ def ver_check():
         return None
 
 root = tk.Tk()
-root.title("")
+root.title("mods管理ver0.1.0")
 root.geometry("400x600")
 
 
@@ -88,7 +88,7 @@ root.columnconfigure(0, weight=1)
 root.columnconfigure(1, weight=1)
 root.columnconfigure(2, weight=1)
 
-entry_text = tk.Label(root,text="特段の事情がない場合は変更しないでください。")
+entry_text = tk.Label(root,text="同期を押下する前に、必ずバージョンチェックを実行してください。\n特段の事情がない場合は下記のurlを変更しないでください。")
 entry_text.grid(row=0,column=0,sticky="w",padx=(10,0),pady=(10,0))
 url_entry = tk.Entry(root)
 url_entry.insert(0,"http://haskyblog.net/mc/mods1/")
