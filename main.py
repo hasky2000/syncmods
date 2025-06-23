@@ -6,104 +6,130 @@ from urllib.parse import urljoin
 import os
 import zipfile
 import shutil
+import sys
 
-os.makedirs("diffcheck", exist_ok=True)
+# 実行ファイルの場所を基準にする
+if getattr(sys, 'frozen', False):
+    BASE_PATH = os.path.dirname(sys.executable)
+else:
+    BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
-file_path = "diffcheck/version.txt"
-if not os.path.exists(file_path):
-    with open(file_path, "w", encoding="utf-8") as f:
+DATA_DIR = os.path.join(BASE_PATH, "diffcheck")
+MODS_DIR = os.path.join(BASE_PATH, "mods")
+TMP_DIR = os.path.join(DATA_DIR, "tmp")
+
+# diffcheckフォルダがなければ作成
+os.makedirs(DATA_DIR, exist_ok=True)
+
+# version.txt がなければ初期化
+version_file_path = os.path.join(DATA_DIR, "version.txt")
+if not os.path.exists(version_file_path):
+    with open(version_file_path, "w", encoding="utf-8") as f:
         f.write("N/A")
 
 def DL_file():
     global global_ver
     url = url_entry.get()
     file_name = "mods.zip"
-    url = urljoin(url,file_name)
+    full_url = urljoin(url, file_name)
     try:
-        r = requests.get(url)
+        # ダウンロード
+        r = requests.get(full_url)
         r.raise_for_status()
-        with open("./diffcheck/mods.zip","wb") as f:
+        with open(os.path.join(DATA_DIR, "mods.zip"), "wb") as f:
             f.write(r.content)
-        messagebox.showinfo("成功","同期成功")
-        if os.path.exists("./diffcheck/tmp/"):
-            shutil.rmtree("./diffcheck/tmp/")
-        os.makedirs("./diffcheck/tmp/")
-        
-        with zipfile.ZipFile("./diffcheck/mods.zip", "r") as zip_ref:
-            zip_ref.extractall("./diffcheck/tmp/")
-        
-        if os.path.exists("./mods"):
-            shutil.rmtree("./mods")
-        os.makedirs("./mods")
-        
-        for item in os.listdir("./diffcheck/tmp/"):
-            src_path = os.path.join("./diffcheck/tmp/",item)
-            dst_path = os.path.join("./mods",item)
+        messagebox.showinfo("成功", "同期成功")
+
+        # 解凍先初期化
+        if os.path.exists(TMP_DIR):
+            shutil.rmtree(TMP_DIR)
+        os.makedirs(TMP_DIR)
+
+        # 解凍
+        with zipfile.ZipFile(os.path.join(DATA_DIR, "mods.zip"), "r") as zip_ref:
+            zip_ref.extractall(TMP_DIR)
+
+        # mods/ にコピー
+        if os.path.exists(MODS_DIR):
+            shutil.rmtree(MODS_DIR)
+        os.makedirs(MODS_DIR)
+
+        for item in os.listdir(TMP_DIR):
+            src_path = os.path.join(TMP_DIR, item)
+            dst_path = os.path.join(MODS_DIR, item)
             if os.path.isdir(src_path):
                 shutil.copytree(src_path, dst_path)
             else:
                 shutil.copy2(src_path, dst_path)
-        
-        with open("./diffcheck/version.txt","w",encoding="utf-8") as f:
+
+        # バージョン更新
+        with open(version_file_path, "w", encoding="utf-8") as f:
             f.write(global_ver)
+
     except Exception as e:
-        messagebox.showerror("error",f"同期失敗:\n{e}")
+        messagebox.showerror("error", f"同期失敗:\n{e}")
 
 def ver_check():
     global global_ver
     url = url_entry.get()
     file_name = "version.json"
-    url = urljoin(url,file_name)
+    full_url = urljoin(url, file_name)
     try:
-        r = requests.get(url)
+        r = requests.get(full_url)
         r.raise_for_status()
         data = r.json()
-        version = data.get("version","N/A")
-        note = data.get("note","")
-        
-        with open("./diffcheck/version.txt","r",encoding="utf-8") as f:
-            lastest_ver = f.read()
-            
-        version_label.config(text=f"バージョン:{version}")
-        note_label.config(text=f"備考:{note}")
-        
-        if version == lastest_ver:
-            version_condition.config(text="最新です",fg="green")
-        else:
-            version_condition.config(text="同期が必要です",fg="red")
-        
-        global_ver = version
-        
-        
-    except Exception as e:
-        messagebox.showerror("error",f"バージョン情報取得失敗:\n{e}")
-        return None
+        version = data.get("version", "N/A")
+        mc_ver = data.get("mc_ver", "N/A")
+        forge_ver = data.get("forge_ver", "N/A")
+        note = data.get("note", "")
 
+        with open(version_file_path, "r", encoding="utf-8") as f:
+            lastest_ver = f.read()
+
+        version_label.config(text=f"modsバージョン:{version}")
+        mc_ver_label.config(text=f"minecraftバージョン:{mc_ver}")
+        forge_ver_label.config(text=f"forgeバージョン:{forge_ver}")
+        note_label.config(text=f"備考:{note}")
+
+        if version == lastest_ver:
+            version_condition.config(text="最新です", fg="green")
+        else:
+            version_condition.config(text="同期が必要です", fg="red")
+
+        global_ver = version
+
+    except Exception as e:
+        messagebox.showerror("error", f"バージョン情報取得失敗:\n{e}")
+
+# GUI構築
 root = tk.Tk()
 root.title("mods管理ver0.1.0")
-root.geometry("400x600")
-
+root.geometry("400x250")
 
 root.columnconfigure(0, weight=1)
 root.columnconfigure(1, weight=1)
 root.columnconfigure(2, weight=1)
 
-entry_text = tk.Label(root,text="同期を押下する前に、必ずバージョンチェックを実行してください。\n特段の事情がない場合は下記のurlを変更しないでください。")
-entry_text.grid(row=0,column=0,sticky="w",padx=(10,0),pady=(10,0))
+entry_text = tk.Label(root, text="同期を押下する前に、必ずバージョンチェックを実行してください。\n特段の事情がない場合は下記のurlを変更しないでください。",justify="left")
+entry_text.grid(row=0, column=0, sticky="w", padx=(10, 0), pady=(10, 0))
 url_entry = tk.Entry(root)
-url_entry.insert(0,"http://haskyblog.net/mc/mods1/")
-url_entry.grid(row=1,column=0,columnspan=2,sticky="we",padx=(10,0),pady=(0,0))
+url_entry.insert(0, "http://haskyblog.net/mc/mods1/")
+url_entry.grid(row=1, column=0, columnspan=2, sticky="we", padx=(10, 0), pady=(0, 0))
 
-DL_button = tk.Button(root,text="同期",command=DL_file)
-DL_button.grid(row=2,column=0,columnspan=2,rowspan=2,sticky="we",padx=(10,0),pady=(10,0))
-ver_check_button = tk.Button(root,text="バージョンチェック",command=ver_check)
-ver_check_button.grid(row=2,column=3,sticky="we",padx=(0,10),pady=(10,0))
+DL_button = tk.Button(root, text="同期", command=DL_file)
+DL_button.grid(row=2, column=0, columnspan=2, rowspan=2, sticky="we", padx=(10, 10), pady=(10, 0))
+ver_check_button = tk.Button(root, text="バージョンチェック", command=ver_check)
+ver_check_button.grid(row=2, column=2, sticky="we", padx=(0, 10), pady=(10, 0))
 
-version_label = tk.Label(root,text="バージョン:N/A")
-version_condition = tk.Label(root,text="")
-note_label = tk.Label(root,text="備考:")
-version_label.grid(row=4,column=0,sticky="w",padx=(10,0))
-version_condition.grid(row=5,column=0,sticky="w",padx=(10,0))
-note_label.grid(row=6,column=0,sticky="w",padx=(10,0))
+version_label = tk.Label(root, text="modsバージョン:N/A")
+version_condition = tk.Label(root, text="")
+mc_ver_label = tk.Label(root,text="minecraftバージョン:N/A")
+forge_ver_label = tk.Label(root,text="forgeバージョン:N/A")
+note_label = tk.Label(root, text="備考:",wraplength=350,justify="left")
+version_label.grid(row=4, column=0,columnspan=3, sticky="w", padx=(10, 0))
+version_condition.grid(row=5,column=0,columnspan=3,sticky="w", padx=(10,0))
+mc_ver_label.grid(row=6, column=0,columnspan=3, sticky="w", padx=(10, 0))
+forge_ver_label.grid(row=7, column=0,columnspan=3, sticky="w", padx=(10, 0))
+note_label.grid(row=8, column=0,columnspan=3,rowspan=3, sticky="w", padx=(10, 0))
 
 root.mainloop()
