@@ -116,7 +116,7 @@ def ver_check():
 
 # GUI構築
 root = tk.Tk()
-root.title("mods管理ver0.1.0")
+root.title("modsync|ver0.3.0preview2")
 root.geometry("400x250")
 
 root.columnconfigure(0, weight=1)
