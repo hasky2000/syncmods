@@ -48,7 +48,7 @@ def DL_file():
         r.raise_for_status()
         with open(os.path.join(DATA_DIR, "mods.zip"), "wb") as f:
             f.write(r.content)
-        messagebox.showinfo("成功", "同期成功")
+        
 
         # 解凍先初期化
         if os.path.exists(TMP_DIR):
@@ -59,28 +59,39 @@ def DL_file():
         with zipfile.ZipFile(os.path.join(DATA_DIR, "mods.zip"), "r") as zip_ref:
             zip_ref.extractall(TMP_DIR)
 
-        # mods/ にコピー
+                # mods/ にコピー
         if os.path.exists(MODS_DIR):
             shutil.rmtree(MODS_DIR)
         os.makedirs(MODS_DIR)
 
-        for item in os.listdir(TMP_DIR):
-            src_path = os.path.join(TMP_DIR, item)
+        # TMP_DIRの中身を確認
+        items = os.listdir(TMP_DIR)
+        if len(items) == 1 and os.path.isdir(os.path.join(TMP_DIR, items[0])):
+            inner = os.path.join(TMP_DIR, items[0])
+            if os.path.basename(inner).lower() == "mods":
+                # TMP_DIR/mods の中身を MODS_DIR へコピー
+                copy_source = inner
+            else:
+                copy_source = TMP_DIR
+        else:
+            copy_source = TMP_DIR
+
+        for item in os.listdir(copy_source):
+            src_path = os.path.join(copy_source, item)
             dst_path = os.path.join(MODS_DIR, item)
             if os.path.isdir(src_path):
                 shutil.copytree(src_path, dst_path)
             else:
                 shutil.copy2(src_path, dst_path)
-
-        # バージョン更新
         with open(version_file_path, "w", encoding="utf-8") as f:
             f.write(global_ver)
+        root.after(0, lambda: messagebox.showinfo("成功", "同期成功"))
 
     except Exception as e:
-        messagebox.showerror("error", f"同期失敗:\n{e}")
+        root.after(0, lambda: messagebox.showerror("error", f"同期失敗:\n{e}"))
     finally:
         root.after(0,progressber.stop())
-        progressber.grid_remove()
+        root.after(0,progressber.grid_remove())
 
 def ver_check():
     global global_ver
