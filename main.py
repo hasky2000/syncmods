@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 import requests
 import json
 from urllib.parse import urljoin
@@ -7,6 +8,8 @@ import os
 import zipfile
 import shutil
 import sys
+import threading
+
 
 # 実行ファイルの場所を基準にする
 if getattr(sys, 'frozen', False):
@@ -26,6 +29,13 @@ version_file_path = os.path.join(DATA_DIR, "version.txt")
 if not os.path.exists(version_file_path):
     with open(version_file_path, "w", encoding="utf-8") as f:
         f.write("N/A")
+
+def start_dl_file():
+    progressber.grid()
+    is_progressber_show = True
+    progressber.start()
+    thread = threading.Thread(target=DL_file)
+    thread.start()
 
 def DL_file():
     global global_ver
@@ -68,6 +78,9 @@ def DL_file():
 
     except Exception as e:
         messagebox.showerror("error", f"同期失敗:\n{e}")
+    finally:
+        root.after(0,progressber.stop())
+        progressber.grid_remove()
 
 def ver_check():
     global global_ver
@@ -112,12 +125,14 @@ root.columnconfigure(2, weight=1)
 
 entry_text = tk.Label(root, text="同期を押下する前に、必ずバージョンチェックを実行してください。\n特段の事情がない場合は下記のurlを変更しないでください。",justify="left")
 entry_text.grid(row=0, column=0, sticky="w", padx=(10, 0), pady=(10, 0))
+
 url_entry = tk.Entry(root)
 url_entry.insert(0, "http://haskyblog.net/mc/mods1/")
 url_entry.grid(row=1, column=0, columnspan=2, sticky="we", padx=(10, 0), pady=(0, 0))
 
-DL_button = tk.Button(root, text="同期", command=DL_file)
+DL_button = tk.Button(root, text="同期", command=start_dl_file)
 DL_button.grid(row=2, column=0, columnspan=2, rowspan=2, sticky="we", padx=(10, 10), pady=(10, 0))
+
 ver_check_button = tk.Button(root, text="バージョンチェック", command=ver_check)
 ver_check_button.grid(row=2, column=2, sticky="we", padx=(0, 10), pady=(10, 0))
 
@@ -126,10 +141,17 @@ version_condition = tk.Label(root, text="")
 mc_ver_label = tk.Label(root,text="minecraftバージョン:N/A")
 forge_ver_label = tk.Label(root,text="forgeバージョン:N/A")
 note_label = tk.Label(root, text="備考:",wraplength=350,justify="left")
+
 version_label.grid(row=4, column=0,columnspan=3, sticky="w", padx=(10, 0))
 version_condition.grid(row=5,column=0,columnspan=3,sticky="w", padx=(10,0))
 mc_ver_label.grid(row=6, column=0,columnspan=3, sticky="w", padx=(10, 0))
 forge_ver_label.grid(row=7, column=0,columnspan=3, sticky="w", padx=(10, 0))
 note_label.grid(row=8, column=0,columnspan=3,rowspan=3, sticky="w", padx=(10, 0))
+
+progressber = ttk.Progressbar(root, orient="horizontal",length=350,mode="indeterminate")
+progressber.stop()
+progressber.grid(row=11, column=0,columnspan=3)
+progressber.grid_remove()
+
 
 root.mainloop()
