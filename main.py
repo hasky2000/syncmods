@@ -10,6 +10,7 @@ import shutil
 import sys
 import threading
 
+app_ver = "0.3.0-preview.3"
 
 # 実行ファイルの場所を基準にする
 if getattr(sys, 'frozen', False):
@@ -125,6 +126,26 @@ def ver_check():
     except Exception as e:
         messagebox.showerror("error", f"バージョン情報取得失敗:\n{e}")
 
+def check_update():
+    url = url_entry.get()
+    file_name = "version.json"
+    full_url = urljoin(url, file_name)
+    try:
+        r = requests.get(full_url)
+        r.raise_for_status()
+        result = r.json()
+        lastest_ver = result.get("app_ver")
+        if lastest_ver != app_ver:
+            result = messagebox.askyesno("アップデート",f"新しいアップデートがあります。(version:{lastest_ver})\nアップデートを実行しますか？")
+        if result:
+            update_app()
+    except Exception as e:
+        messagebox.showerror("error", f"アップデート情報取得失敗:\n{e}")
+
+def update_app():
+    
+
+
 # GUI構築
 root = tk.Tk()
 root.title("modsync|ver0.3.0preview2")
@@ -164,5 +185,8 @@ progressber.stop()
 progressber.grid(row=11, column=0,columnspan=3)
 progressber.grid_remove()
 
+
+
+root.after(100,check_update)
 
 root.mainloop()
