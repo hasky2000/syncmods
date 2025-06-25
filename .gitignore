@@ -1,0 +1,13 @@
+dist/
+
+venv/
+
+diffcheck/
+
+build/
+
+mods/
+
+main.spec
+
+update.bat
