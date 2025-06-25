@@ -94,8 +94,8 @@ def DL_file():
     except Exception as e:
         root.after(0, lambda: messagebox.showerror("error", f"同期失敗:\n{e}"))
     finally:
-        root.after(0,progressber.stop())
-        root.after(0,progressber.grid_remove())
+        root.after(0,progressber.stop)
+        root.after(0,progressber.grid_remove)
 
 def ver_check():
     global global_ver
@@ -176,7 +176,7 @@ del "modsync{app_ver}.exe"
         with open("update.bat", "w", encoding="utf-8") as f:
             f.write(updater)
             subprocess.Popen(["update.bat"], shell=True)
-            sys.exit()
+            root.destroy()
 
 
 
