@@ -11,7 +11,7 @@ import sys
 import threading
 import subprocess
 
-app_ver = "0.3.0-preview.3"
+app_ver = "0.3.0-preview.4"
 
 
 
