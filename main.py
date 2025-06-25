@@ -9,8 +9,11 @@ import zipfile
 import shutil
 import sys
 import threading
+import subprocess
 
 app_ver = "0.3.0-preview.3"
+
+
 
 # 実行ファイルの場所を基準にする
 if getattr(sys, 'frozen', False):
@@ -127,6 +130,7 @@ def ver_check():
         messagebox.showerror("error", f"バージョン情報取得失敗:\n{e}")
 
 def check_update():
+    global lastest_ver
     url = url_entry.get()
     file_name = "version.json"
     full_url = urljoin(url, file_name)
@@ -143,12 +147,43 @@ def check_update():
         messagebox.showerror("error", f"アップデート情報取得失敗:\n{e}")
 
 def update_app():
-    
+    global lastest_ver
+    url = url_entry.get()
+    file_name = "version.json"
+    full_url = urljoin(url, file_name)
+    try:
+        json_result = requests.get(full_url).json()
+        github_url = json_result.get("github_url")
+        EXE_DL_PATH = os.path.join(os.getcwd(), f"modsync{lastest_ver}.exe")
+        try:
+            github_response = requests.get(github_url)
+            github_response.raise_for_status()
+            with open(EXE_DL_PATH,"wb") as f:
+                for chunk in github_response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        except Exception as e:
+            messagebox.showerror("error", f"更新のダウンロードに失敗しました:\n{e}")
+    except Exception as e:
+        messagebox.showerror("error", f"情報取得に失敗しました:\n{e}")
+    finally:
+        updater = f"""@echo off
+timeout /t 2 > nul
+start "" "modsync{lastest_ver}.exe"
+timeout /t 5 > nul
+del "modsync{app_ver}.exe"
+"""
+        with open("update.bat", "w", encoding="utf-8") as f:
+            f.write(updater)
+            subprocess.Popen(["update.bat"], shell=True)
+            sys.exit()
+
+
 
 
 # GUI構築
 root = tk.Tk()
-root.title("modsync|ver0.3.0preview2")
+root.title(f"modsync | {app_ver}")
 root.geometry("400x250")
 
 root.columnconfigure(0, weight=1)
